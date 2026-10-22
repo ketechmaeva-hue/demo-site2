@@ -2,6 +2,6 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "functions": {
-    "api/chat.js": { "maxDuration": 30 }
+    "api/chat.js": { "maxDuration": 60 }
   }
 }
