@@ -68,7 +68,8 @@ module.exports = async function handler(req, res) {
       contents,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 4096
+        maxOutputTokens: 4096,
+        thinkingConfig: { thinkingLevel: "low" }
       }
     };
 
@@ -90,9 +91,15 @@ module.exports = async function handler(req, res) {
             "Content-Type": "application/json",
             "x-goog-api-key": apiKey.trim()
           },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(24000)
         });
       } catch (networkError) {
+        if (networkError && networkError.name === "TimeoutError") {
+          return res.status(504).json({
+            error: "Gemini слишком долго отвечает. Попробуйте ещё раз или задайте вопрос короче."
+          });
+        }
         console.error(
           "LISICHKA_DIAG: network error",
           networkError?.message || String(networkError)
@@ -115,6 +122,15 @@ module.exports = async function handler(req, res) {
 
       if (response.ok) {
         break;
+      }
+
+      if (
+        response.status === 400 &&
+        requestBody.generationConfig.thinkingConfig
+      ) {
+        delete requestBody.generationConfig.thinkingConfig;
+        attempt--;
+        continue;
       }
 
       const temporaryError =
