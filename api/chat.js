@@ -58,8 +58,10 @@ module.exports = async function handler(req, res) {
 Не выдумывай точные цены, расписания, часы работы, наличие мест и текущую погоду. Если эти сведения неизвестны, предупреди, что их нужно проверить перед поездкой.`;
 
     const model = (process.env.GEMINI_MODEL || "gemini-3.8-flash").trim();
-    const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const apiUrl = m =>
+      `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
+    let url = apiUrl(model);
+    let fallbackUsed = false;
 
     const requestBody = {
       systemInstruction: {
@@ -69,7 +71,7 @@ module.exports = async function handler(req, res) {
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 4096,
-        thinkingConfig: { thinkingLevel: "low" }
+        thinkingConfig: { thinkingLevel: "minimal" }
       }
     };
 
@@ -92,9 +94,17 @@ module.exports = async function handler(req, res) {
             "x-goog-api-key": apiKey.trim()
           },
           body: JSON.stringify(requestBody),
-          signal: AbortSignal.timeout(24000)
+          signal: AbortSignal.timeout(fallbackUsed ? 28000 : 18000)
         });
       } catch (networkError) {
+        if (networkError && networkError.name === "TimeoutError" && !fallbackUsed) {
+          // Основная модель не успела — пробуем более быструю запасную
+          fallbackUsed = true;
+          url = apiUrl("gemini-flash-lite-latest");
+          delete requestBody.generationConfig.thinkingConfig;
+          attempt--;
+          continue;
+        }
         if (networkError && networkError.name === "TimeoutError") {
           return res.status(504).json({
             error: "Gemini слишком долго отвечает. Попробуйте ещё раз или задайте вопрос короче."
