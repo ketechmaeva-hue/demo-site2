@@ -2375,7 +2375,7 @@ function initMordovochka(){
     }catch(err){
       typing.remove();
       console.error("Lisichka Gemini error:",err);
-      addMsg("bot","Ой, у меня пока не получилось связаться с ИИ. Проверь подключение и настройки GEMINI_API_KEY в Vercel, а затем попробуй ещё раз.");
+      addMsg("bot","Ой, не получилось связаться с ИИ. Причина: "+((err&&err.message)||"неизвестная ошибка")+(err instanceof TypeError||/JSON|Unexpected/.test(String(err&&err.message))?" (похоже, сервер /api/chat недоступен — проверь, что папка api лежит в корне репозитория и сайт открыт по ссылке Vercel)":""));
     }finally{
       sendBtn.disabled=false;
       inputEl.focus();
