@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
 
 Не выдумывай точные цены, расписания, часы работы, наличие мест и текущую погоду. Если эти сведения неизвестны, предупреди, что их нужно проверить перед поездкой.`;
 
-    const model = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
+    const model = (process.env.GEMINI_MODEL || "gemini-3.8-flash").trim();
     const url =
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
@@ -68,9 +68,7 @@ module.exports = async function handler(req, res) {
       contents,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 2500,
-        // Отключаем «размышления», иначе они съедают лимит токенов и ответ обрывается
-        thinkingConfig: { thinkingBudget: 0 }
+        maxOutputTokens: 4096
       }
     };
 
